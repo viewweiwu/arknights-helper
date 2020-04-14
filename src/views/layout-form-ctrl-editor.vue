@@ -1,15 +1,22 @@
 <template>
-  <div class="layout-form-ctrl-editor" v-if="visible" tabindex="0" @keydown.escape="handleBack">
+  <div ref="editor" class="layout-form-ctrl-editor" v-if="visible" tabindex="0" @keydown.stop="handleKeydown">
     <div class="editor-content">
       <div class="editor-row">
         <span class="editor-picker">
-          <a-icon class="editor-picker-up" icon="up" @click="handlePickerUp" />
+          <a-button class="editor-picker-up" @click="handlePickerUp" tabindex="0">
+            <a-icon icon="up" />
+          </a-button>
           <span class="editor-picker-text">{{ pickerLabel }}</span>
-          <a-icon class="editor-picker-down" icon="down" @click="handlePickerDown" />
+          <a-button class="editor-picker-down" @click="handlePickerDown" tabindex="0">
+            <a-icon icon="down" />
+          </a-button>
         </span>
         <a-input placeholder="填充文字" v-if="['normal', 'confirm'].includes(form.picker)" v-model="form.text"></a-input>
-        <a-input placeholder="权限字段" v-model="form.auth"></a-input>
         <a-input placeholder="高亮文字" v-if="['delete', 'confirm'].includes(form.picker)" v-model="form.primary"></a-input>
+        <a-input placeholder="权限字段" v-model="form.auth" v-if="form.auth || !lock" ref="auth"></a-input>
+        <a-button class="editor-lock" size="middle" title="开启权限" v-else @click="unlock">
+          <a-icon icon="lock" />
+        </a-button>
       </div>
     </div>
     <div class="editor-content editor-btns">
@@ -40,6 +47,7 @@ export default {
   data () {
     return {
       visible: false,
+      lock: true,
       form: initForm(),
       options: [
         { label: '普通按钮', value: 'normal' },
@@ -94,15 +102,21 @@ export default {
         form.picker = options[targetIndex].value
       }
     },
-    handleBack () {
-      this.$refs.cancel.handleClick()
+    handleKeydown (e) {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        this.handleConfirm()
+      } else if (e.key === 'Escape') {
+        this.$refs.cancel.handleClick()
+      }
     },
     handleCancel () {
       this.visible = false
+      this.lock = true
       this.resolve = null
     },
     handleConfirm () {
       this.visible = false
+      this.lock = true
       let form = this.form
       switch (form.picker) {
         case 'normal':
@@ -111,10 +125,17 @@ export default {
           break
         case 'delete':
           form.confirm = true
+          form.text = '删除'
           break
       }
-      this.resolve()
+      this.resolve(form)
       this.resolve = null
+    },
+    unlock () {
+      this.lock = false
+      this.$nextTick(() => {
+        this.$refs.auth.focus()
+      })
     }
   }
 }
@@ -136,6 +157,8 @@ export default {
 
   .a-button {
     width: 140px;
+    line-height: unset;
+
     .iconfont {
       text-shadow: unset;
     }
@@ -181,6 +204,7 @@ export default {
     width: 50%;
     height: 40px;
     line-height: 40px;
+    border: none;
     box-shadow: 0 5px 10px rgba(0, 0, 0, .6);
     font-size: 20px;
     color: #fff;
@@ -208,6 +232,16 @@ export default {
 
     input {
       color: #333;
+    }
+  }
+
+  .editor-lock {
+    width: 40px;
+    color: #333;
+    border-color: #fff;
+
+    &:hover {
+      border-color: @blue;
     }
   }
 }

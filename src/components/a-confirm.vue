@@ -17,10 +17,6 @@
 </template>
 
 <script>
-window.$confirm = (info) => {
-  return window.app.$refs.confirm.open(info)
-}
-
 export default {
   name: 'a-confirm',
   data () {
@@ -60,10 +56,10 @@ export default {
 .a-confirm {
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   z-index: 100%;
-  z-index: 20;
+  z-index: 10;
   backdrop-filter: blur(10px);
   position: fixed;
   .flex();

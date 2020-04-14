@@ -18,20 +18,19 @@
       </div>
       <table border="1" cellpadding="0" cellspacing="0">
         <tr>
-          <th class="table-cell-checkbox">
+          <th class="table-cell-checkbox" v-if="hasCheckbox">
             <div class="table-checkbox"></div>
           </th>
           <th v-for="field in fields" :key="field.key">{{ field.title }}</th>
-          <th width="400px">操作</th>
+          <th width="400px" v-if="hasCtrl">操作</th>
         </tr>
         <tr v-for="row in tableData" :key="row.id">
-          <td class="table-cell-checkbox">
+          <td class="table-cell-checkbox" v-if="hasCheckbox">
             <div class="table-checkbox"></div>
           </td>
           <td v-for="field in fields" :key="field.key">{{ row[field.key] }}</td>
-          <td class="table-cell-ctrl">
-            <a-button>编辑</a-button>
-            <a-button>删除</a-button>
+          <td class="table-cell-ctrl" v-if="hasCtrl">
+            <a-button size="small" v-for="item in ctrls" :key="item.text">{{ item.text }}</a-button>
           </td>
         </tr>
       </table>
@@ -40,66 +39,18 @@
 </template>
 
 <script>
+import { mapState } from 'vuex'
+import { tableData } from './layout-preview-data'
+
 export default {
   name: 'layout-preview',
   data () {
     return {
-      tableData: window.tableData,
-      fields: [
-        {
-          title: '第一列',
-          key: '',
-          type: '',
-          options: [],
-          optionsKey: '',
-          hasTableExtend: true,
-          table: {
-            title: '',
-            type: '',
-            key: ''
-          },
-          hasSearchExtend: true,
-          search: {
-            title: '',
-            type: '',
-            key: ''
-          },
-          hasDialogExtend: false,
-          dialog: {
-            title: '',
-            type: '',
-            key: ''
-          }
-        },
-        {
-          title: '第二列',
-          key: '',
-          type: '',
-          options: [],
-          optionsKey: '',
-          hasTableExtend: true,
-          table: {
-            title: '',
-            type: '',
-            key: ''
-          },
-          hasSearchExtend: true,
-          search: {
-            title: '',
-            type: '',
-            key: ''
-          },
-          hasDialogExtend: false,
-          dialog: {
-            title: '',
-            type: '',
-            key: ''
-          }
-        }
-      ]
+      tableData
     }
   },
   computed: {
+    ...mapState(['fields', 'hasCheckbox', 'hasCtrl', 'ctrls']),
     searchFields () {
       return this.fields.filter((field) => field.hasSearchExtend)
     }
@@ -126,3 +77,91 @@ export default {
   }
 }
 </script>
+
+<style lang="less">
+.layout-preview {
+  height: 100%;
+  padding: 20px;
+  outline: none;
+
+  td,
+  th {
+    height: 50px;
+    text-align: left;
+    padding: 0 @space;
+  }
+
+  th {
+    background-color: @bg-white-fade;
+  }
+
+  table {
+    width: 100%;
+    border: none;
+    border-collapse: collapse;
+    background-color: @fade-black;
+  }
+
+  .btn {
+    height: 40px;
+  }
+
+  .table-checkbox {
+    width: @space2;
+    height: @space2;
+    border: 1px solid @white;
+    display: inline-block;
+  }
+
+  .table-cell-checkbox {
+    width: 50px;
+    text-align: center;
+  }
+
+  .table-cell-ctrl {
+    .btn {
+      color: @blue;
+      border: none;
+      width: unset;
+
+      &:hover,
+      &:focus {
+        color: @black;
+      }
+    }
+  }
+}
+
+.layout-preview-search {
+  padding: 0 12px;
+  overflow: hidden;
+
+  .form-item {
+    width: 33%;
+    float: left;
+  }
+
+  .item-label {
+    width: 120px;
+    padding-right: 1em;
+    text-align: right;
+  }
+
+  .a-input {
+    flex: 1;
+    background-color: @fade-white;
+  }
+
+  .search-btns {
+    padding-left: 120px;
+  }
+}
+
+.layout-preview-table {
+  padding: @space2;
+
+  .table-header {
+    margin: 12px 0;
+  }
+}
+</style>

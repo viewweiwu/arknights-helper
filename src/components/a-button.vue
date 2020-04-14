@@ -49,6 +49,11 @@ export default {
     line-height: 30px;
   }
 
+  &.middle {
+    height: 40px;
+    line-height: 40px;
+  }
+
   &:hover,
   &:focus,
   &.active {

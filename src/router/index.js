@@ -19,6 +19,16 @@ export default new Router({
       path: '/preview',
       name: 'preview',
       component: () => import(/* webpackChunkName: "preview" */'../views/layout-preview')
+    },
+    {
+      path: '/params',
+      name: 'params',
+      component: () => import(/* webpackChunkName: "params" */'../views/layout-params')
+    },
+    {
+      path: '/export',
+      name: 'export',
+      component: () => import(/* webpackChunkName: "export" */'../views/layout-export')
     }
   ]
 })

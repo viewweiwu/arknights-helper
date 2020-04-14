@@ -1,5 +1,5 @@
 <template>
-  <div ref="form" class="layout-form" v-if="visible" @keydown.stop="handleKeydow">
+  <div ref="form" class="layout-form" v-if="visible" @keydown.stop="handleKeydown">
     <div class="layout-form-header">
       <div class="header-left">
         <a-back @click="handleBack" ref="back"></a-back>
@@ -246,7 +246,7 @@ export default {
         this.active = active
       }, 100)
     },
-    handleKeydow (e) {
+    handleKeydown (e) {
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
         this.handleConfirm()
       } else if (e.key === 'Escape') {
@@ -310,8 +310,8 @@ export default {
 .layout-form {
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   padding: 10vh 5vw;
   backdrop-filter: blur(10px);
   z-index: 2;

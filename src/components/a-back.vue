@@ -1,5 +1,5 @@
 <template>
-  <button ref="btn" class="btn-back" @click="handleClick">
+  <button ref="btn" class="a-back" @click="handleClick">
     <a-icon icon="back"></a-icon>
   </button>
 </template>

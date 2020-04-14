@@ -10,6 +10,9 @@ Vue.prototype.$sound = sound
 
 // window.onunhandledrejection = (e) => console.log(e)
 
+let s = window.screen.width / 1920
+document.body.style.zoom = s
+
 window.loginTip = true
 
 window.app = new Vue({

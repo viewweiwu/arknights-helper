@@ -1,5 +1,5 @@
 <template>
-  <div ref="ctrl" class="layout-form-ctrl" v-if="visible" @keydown.stop="handleKeydow">
+  <div ref="ctrl" class="layout-form-ctrl" v-if="visible" @keydown.stop="handleKeydow" tabindex="0">
     <div class="layout-form-header">
       <div class="header-left">
         <a-back @click="handleBack" ref="back"></a-back>
@@ -13,38 +13,43 @@
     <div class="ctrl-body">
       <h2 class="ctrl-header">设定按钮</h2>
       <ul class="ctrl-list">
-        <li class="ctrl-item" v-for="(item, i) in btns" :key="item.id">
-          <div class="ctrl-empty" v-if="!item.form" @click="handleAdd(i)">
-            <a-icon icon="plus" :size="40" />
-            <p class="ctrl-text">开始添加按钮</p>
-          </div>
-          <div class="ctrl-added" v-else>
-            <header class="ctrl-item-header">按钮信息</header>
+        <li class="ctrl-item" v-for="(ctrl, i) in ctrls" :key="i">
+          <div class="ctrl-added">
+            <header class="ctrl-item-header">按钮样本</header>
             <div class="ctrl-item-body">
               <div class="body-left">
-                <p v-if="item.form.auth">
+                <p v-if="ctrl.auth">
                   <a-icon icon="lock" />
-                  {{ item.form.auth }}
-                </p>
-                <p v-if="item.form.confirm">
-                  <a-icon icon="question" />
-                  {{ item.form.confirm ? '点击会询问' : '点击不会询问' }}
-                </p>
-                <p v-if="item.form.confirm">
-                  <a-icon icon="light" />
-                  {{ item.form.primary }}
+                  {{ ctrl.auth }}
                 </p>
               </div>
               <div class="body-right">
-                <a-button type="blue">{{ item.form.text }}</a-button>
+                <div class="a-button blue body-confirm" type="blue" tabindex="0">
+                  {{ ctrl.text }}
+                  <div class="pop" v-if="ctrl.confirm">
+                    <header class="pop-header"><a-icon icon="question" />
+                      <span class="gap">确定要删除<span class="pop-primary">{{ ctrl.primary }}</span>吗？</span>
+                    </header>
+                    <footer class="pop-footer">
+                      <a-button class="pop-cancel" size="small">取消</a-button>
+                      <a-button type="black" size="small">确定</a-button>
+                    </footer>
+                  </div>
+                </div>
               </div>
             </div>
             <footer class="ctrl-item-footer">
-              <a-button type="black" @click="handleDelete(item)">删除</a-button>
-              <a-button type="black" @click="handleUpdate(item, i)">修改</a-button>
+              <a-button type="black" @click="handleDelete(i)">删除</a-button>
+              <a-button type="black" @click="handleUpdate(i)">修改</a-button>
             </footer>
           </div>
           <span class="ctrl-num">{{ i + 1 }}</span>
+        </li>
+        <li class="ctrl-item" v-for="n in max" :key="n * Math.random()">
+          <div class="ctrl-empty" @click="handleAdd(n)">
+            <a-icon icon="plus" :size="40" />
+            <p class="ctrl-text">开始添加按钮</p>
+          </div>
         </li>
       </ul>
     </div>
@@ -54,6 +59,7 @@
 
 <script>
 import LayoutFormCtrlEditor from './layout-form-ctrl-editor'
+import { mapState, mapActions } from 'vuex'
 
 export default {
   name: 'layout-form-ctrl',
@@ -62,50 +68,47 @@ export default {
   },
   data () {
     return {
-      visible: true,
-      btns: [
-        {
-          id: 1,
-          form: null
-        },
-        {
-          id: 2,
-          form: null
-        },
-        {
-          id: 3,
-          form: null
-        },
-        {
-          id: 4,
-          form: null
-        }
-      ]
+      visible: false,
+      btns: []
+    }
+  },
+  computed: {
+    ...mapState(['ctrls']),
+    max () {
+      let len = 4 - this.ctrls.length
+      return len < 0 ? 0 : len
     }
   },
   mounted () {
     document.body.appendChild(this.$el)
   },
   methods: {
-    handleAdd (i) {
-      this.$refs.editor.open().then(form => {
-        this.btns[i].form = form
+    ...mapActions(['addCtrl', 'updateCtrl']),
+    open () {
+      this.visible = true
+    },
+    handleAdd (n) {
+      if (n !== 1) {
+        window.$tip(`<p>丷前面空着不好处理</p><p>帮您挪到了第${this.ctrls.length + 1}个</p>`)
+      }
+      this.$refs.editor.open().then(ctrl => {
+        this.addCtrl(ctrl)
       })
     },
     handleUpdate (i) {
-      this.$refs.editor.open(this.btns[i].form).then(form => {
-        this.btns[i].form = form
+      this.$refs.editor.open(this.ctrls[i]).then(ctrl => {
+        this.updateCtrl({ ctrl, i })
       })
     },
     handleBack () {
       this.visible = false
-      this.resolve = null
-      this.reject = null
-      this.reject()
     },
-    handleDelete (item) {
+    handleDelete (i) {
       window.$confirm('确认要删除吗？').then(() => {
-        item.form = null
+        if (i !== this.ctrls.length - 1) {
+          window.$tip('已经自动矫正好顺序')
+        }
+        this.ctrls.splice(i, 1)
       }, () => {})
     },
     handlePickerUp () {
@@ -146,8 +149,8 @@ export default {
 .layout-form-ctrl {
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   padding: 10vh 5vw;
   z-index: 3;
   color: black;
@@ -214,6 +217,18 @@ export default {
       display: flex;
       align-items: center;
     }
+
+    .a-button {
+      position: relative;
+    }
+
+    .body-confirm {
+      &:focus {
+        .pop {
+          display: block;
+        }
+      }
+    }
   }
 
   .ctrl-item-footer {
@@ -278,6 +293,54 @@ export default {
     position: absolute;
     user-select: none;
     .flex();
+  }
+
+  .pop {
+    bottom: 120%;
+    left: 0;
+    width: 270px;
+    padding: @space;
+    color: #333;
+    background-color: #fff;
+    z-index: 10;
+    position: absolute;
+    white-space: nowrap;
+    display: none;
+    overflow: hidden;
+    animation: popin 300ms;
+
+    .iconfont {
+      text-shadow: unset;
+    }
+  }
+
+  @keyframes popin {
+    from {
+      width: 0;
+    }
+    to {
+      width: 270px;
+    }
+  }
+
+  .pop-header {
+    padding-left: @space;
+    margin-bottom: @space;
+    text-align: left;
+  }
+
+  .pop-footer {
+    display: flex;
+  }
+
+  .pop-cancel {
+    color: #333;
+    border: none;
+    background-color: unset;
+  }
+
+  .pop-primary {
+    color: @blue;
   }
 }
 </style>

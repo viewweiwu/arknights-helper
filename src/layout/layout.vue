@@ -28,212 +28,212 @@ import { getProfile, getUserMenu, getSystemConfig, checkToken } from '@/api/user
 import bus from '@/bus'
 
 const listToMap = (list) => {
-    let map = {}
-    list.forEach(item => {
-        map[item.id] = item
-    })
-    return map
+  let map = {}
+  list.forEach(item => {
+    map[item.id] = item
+  })
+  return map
 }
 
 // 从 map 里一层一层向上找，直到拼接出完成的 key，key 可能的结果是 'market.event.add'
 const getKey = (item, map, keys = []) => {
-    if (!item) return keys.join('.')
-    let parent = map[item.parentid]
-    if (parent && parent.menucode !== 'tailong-admin') {
-        keys.unshift(item.menucode)
-        return getKey(parent, map, keys)
-    } else {
-        return keys.join('.')
-    }
+  if (!item) return keys.join('.')
+  let parent = map[item.parentid]
+  if (parent && parent.menucode !== 'tailong-admin') {
+    keys.unshift(item.menucode)
+    return getKey(parent, map, keys)
+  } else {
+    return keys.join('.')
+  }
 }
 
 // eslint-disable-next-line no-unused-vars
 const getMenuAndBtn = (data, listToTree) => {
-    if (data.every(item => item.id !== '297ee3ef6cff46ec016cff4e04230000')) {
-        data.push({
-            id: '297ee3ef6cff46ec016cff4e04230000',
-            menucode: 'tailong-admin',
-            parentid: '1',
-            menuenable: '1',
-            menutype: '1'
-        })
-    }
-    // 转化为 tree
-    let rootTree = listToTree({
-        data: data.filter(item => item.menutype === '1'),
-        parentKey: 'parentid',
-        labelKey: 'menuname',
-        childrenKey: 'children',
-        valueKey: 'id',
-        rootValue: '-1',
-        format: (item) => {
-            return {
-                code: item.menucode,
-                title: item.menuname,
-                icon: item.iconurl || '',
-                parentid: item.parentid,
-                id: item.id,
-                link: item.menuurl,
-                isBtn: item.menutype === '5',
-                children: item.children
-            }
-        }
+  if (data.every(item => item.id !== '297ee3ef6cff46ec016cff4e04230000')) {
+    data.push({
+      id: '297ee3ef6cff46ec016cff4e04230000',
+      menucode: 'tailong-admin',
+      parentid: '1',
+      menuenable: '1',
+      menutype: '1'
     })
-    // 转化为 map
-    let map = listToMap(data)
-    let result = []
-    data.forEach(item => {
-        if (item.menutype === '5') {
-            let key = getKey(item, map)
-            result.push(key)
-        }
-    })
-
-    let root = rootTree.find(item => item.code === 'resRoot')
-
-    return {
-        menuList: root ? root.children : [],
-        menuOptions: data.map(item => item.menuurl).filter(item => item),
-        authList: result
+  }
+  // 转化为 tree
+  let rootTree = listToTree({
+    data: data.filter(item => item.menutype === '1'),
+    parentKey: 'parentid',
+    labelKey: 'menuname',
+    childrenKey: 'children',
+    valueKey: 'id',
+    rootValue: '-1',
+    format: (item) => {
+      return {
+        code: item.menucode,
+        title: item.menuname,
+        icon: item.iconurl || '',
+        parentid: item.parentid,
+        id: item.id,
+        link: item.menuurl,
+        isBtn: item.menutype === '5',
+        children: item.children
+      }
     }
+  })
+  // 转化为 map
+  let map = listToMap(data)
+  let result = []
+  data.forEach(item => {
+    if (item.menutype === '5') {
+      let key = getKey(item, map)
+      result.push(key)
+    }
+  })
+
+  let root = rootTree.find(item => item.code === 'resRoot')
+
+  return {
+    menuList: root ? root.children : [],
+    menuOptions: data.map(item => item.menuurl).filter(item => item),
+    authList: result
+  }
 }
 
 export default {
-    components: {
-        LayoutMenuSide,
-        LayoutHeader,
-        LayoutChromeNav,
-        LayoutReport
-        // LayoutNav
-    },
-    provide () {
-        return {
-            reload: this.reload,
-            removeNav: this.removeNav
-        }
-    },
-    data () {
-        return {
-            status: 'loading',
-            isRouterAlive: true,
-            menuList: [],
-            hasSide: false
-        }
-    },
-    computed: {
-        ...mapState(['profile', 'fullLoading', 'token', 'config', 'menuOptions']),
-        nopadding () {
-            return this.$route.meta.nopadding
-        }
-    },
-    watch: {
-        $route () {
-            this.handleRouteChange()
-        },
-        hasSide () {
-            // this.doLayout()
-        }
-    },
-    mounted () {
-        this.init()
-        bus.$on('menu-parent-show', this.handleMenuToggle)
-        bus.$on('menu-select', this.handleMenuSelect)
-    },
-    methods: {
-        ...mapActions(['setProfile', 'setAuthList', 'setConfig', 'logout', 'setMenuOptions']),
-        async init () {
-            this.status = 'loading'
-            try {
-                // await this.checkToken()
-                if (this.config || !this.config.default_password) {
-                    // get system config
-                    let config = await getSystemConfig()
-                    this.setConfig(config.obj)
-                }
-                // get profile
-                await this.$getOptionsForSystemParams('depId')
-                let profile = await getProfile()
-                this.setProfile(profile.obj)
-                let params = {
-                    type: "'1', '5'",
-                    rootId: '0'
-                }
-                // get menuList & authList
-                let UserMenu = await getUserMenu(params)
-                let { menuList, authList, menuOptions } = getMenuAndBtn(UserMenu.obj, this.$util.listToTree)
-                this.setAuthList(authList)
-                this.setMenuOptions(menuOptions)
-                this.menuList = menuList
-                this.status = 'pass'
-            } catch (e) {
-                this.status = 'pass'
-            }
-        },
-        // checkToken () {
-        //     return new Promise((resolve, reject) => {
-        //         let params = {
-        //             token: this.token
-        //         }
-        //         checkToken(params).then(() => {
-        //             resolve()
-        //         }).catch(() => {
-        //             this.logout().then(() => {
-        //                 if (this.config.LOGOUT_HREF) {
-        //                     window.location.href = this.config.LOGOUT_HREF
-        //                 } else {
-        //                     this.$router.replace('/login')
-        //                 }
-        //             })
-        //         })
-        //     })
-        // },
-        reload (key) {
-            let { $route } = this
-            this.$router.replace({
-                path: $route.path,
-                query: {
-                    ...$route.query,
-                    _: +new Date()
-                }
-            })
-        },
-        handleChange (name) {
-            this.$refs.nav.changeRoute(name)
-        },
-        removeNav (name) {
-            this.$refs.nav.removeNav(name)
-        },
-        handleMenuSelect (menu, level, parent) {
-            if (level === 'sub' && menu.children) {
-                let first = menu.children[0]
-                if (first && first.link) {
-                    this.$router.push(first.link)
-                }
-            }
-        },
-        handleMenuToggle (show) {
-            this.hasSide = show
-        },
-        doLayout () {
-            if (this.status === 'loading') {
-                return
-            }
-            this.status = 'loading'
-            this.$nextTick(() => {
-                this.status = 'pass'
-            })
-        },
-        handleRouteChange () {
-            let path = this.$route.path
-            let whiteList = ['/home', '/login']
-            if (this.$route.meta.show === true) {
-                return
-            }
-            if (!this.menuOptions.includes(path) && !whiteList.includes(path)) {
-                this.$router.replace('/noauth')
-            }
-        }
+  components: {
+    LayoutMenuSide,
+    LayoutHeader,
+    LayoutChromeNav,
+    LayoutReport
+    // LayoutNav
+  },
+  provide () {
+    return {
+      reload: this.reload,
+      removeNav: this.removeNav
     }
+  },
+  data () {
+    return {
+      status: 'loading',
+      isRouterAlive: true,
+      menuList: [],
+      hasSide: false
+    }
+  },
+  computed: {
+    ...mapState(['profile', 'fullLoading', 'token', 'config', 'menuOptions']),
+    nopadding () {
+      return this.$route.meta.nopadding
+    }
+  },
+  watch: {
+    $route () {
+      this.handleRouteChange()
+    },
+    hasSide () {
+      // this.doLayout()
+    }
+  },
+  mounted () {
+    this.init()
+    bus.$on('menu-parent-show', this.handleMenuToggle)
+    bus.$on('menu-select', this.handleMenuSelect)
+  },
+  methods: {
+    ...mapActions(['setProfile', 'setAuthList', 'setConfig', 'logout', 'setMenuOptions']),
+    async init () {
+      this.status = 'loading'
+      try {
+        // await this.checkToken()
+        if (this.config || !this.config.default_password) {
+          // get system config
+          let config = await getSystemConfig()
+          this.setConfig(config.obj)
+        }
+        // get profile
+        await this.$getOptionsForSystemParams('depId')
+        let profile = await getProfile()
+        this.setProfile(profile.obj)
+        let params = {
+          type: "'1', '5'",
+          rootId: '0'
+        }
+        // get menuList & authList
+        let UserMenu = await getUserMenu(params)
+        let { menuList, authList, menuOptions } = getMenuAndBtn(UserMenu.obj, this.$util.listToTree)
+        this.setAuthList(authList)
+        this.setMenuOptions(menuOptions)
+        this.menuList = menuList
+        this.status = 'pass'
+      } catch (e) {
+        this.status = 'pass'
+      }
+    },
+    // checkToken () {
+    //     return new Promise((resolve, reject) => {
+    //         let params = {
+    //             token: this.token
+    //         }
+    //         checkToken(params).then(() => {
+    //             resolve()
+    //         }).catch(() => {
+    //             this.logout().then(() => {
+    //                 if (this.config.LOGOUT_HREF) {
+    //                     window.location.href = this.config.LOGOUT_HREF
+    //                 } else {
+    //                     this.$router.replace('/login')
+    //                 }
+    //             })
+    //         })
+    //     })
+    // },
+    reload (key) {
+      let { $route } = this
+      this.$router.replace({
+        path: $route.path,
+        query: {
+          ...$route.query,
+          _: +new Date()
+        }
+      })
+    },
+    handleChange (name) {
+      this.$refs.nav.changeRoute(name)
+    },
+    removeNav (name) {
+      this.$refs.nav.removeNav(name)
+    },
+    handleMenuSelect (menu, level, parent) {
+      if (level === 'sub' && menu.children) {
+        let first = menu.children[0]
+        if (first && first.link) {
+          this.$router.push(first.link)
+        }
+      }
+    },
+    handleMenuToggle (show) {
+      this.hasSide = show
+    },
+    doLayout () {
+      if (this.status === 'loading') {
+        return
+      }
+      this.status = 'loading'
+      this.$nextTick(() => {
+        this.status = 'pass'
+      })
+    },
+    handleRouteChange () {
+      let path = this.$route.path
+      let whiteList = ['/home', '/login']
+      if (this.$route.meta.show === true) {
+        return
+      }
+      if (!this.menuOptions.includes(path) && !whiteList.includes(path)) {
+        this.$router.replace('/noauth')
+      }
+    }
+  }
 }
 </script>
 
@@ -259,7 +259,7 @@ body,
     }
 }
 .layout-container {
-    height: ~'calc(100vh - 56px)';
+    height: ~'calc(100% - 56px)';
     margin-left: 200px;
     background-color: @color-bg;
     display: flex;
@@ -347,14 +347,5 @@ body,
     p {
         margin: @space 0;
     }
-}
-.full-loading {
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: rgba(0, 0, 0, .1);
-    z-index: 1000000;
-    position: fixed;
 }
 </style>

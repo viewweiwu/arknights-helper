@@ -80,13 +80,18 @@
 <script>
 import LayoutForm from './layout-form'
 import LayoutFormCtrl from './layout-form-ctrl'
-import { mapState, mapMutations } from 'vuex'
+import { mapState, mapActions } from 'vuex'
 
 export default {
   name: 'layout-fight',
   components: {
     LayoutForm,
     LayoutFormCtrl
+  },
+  data () {
+    return {
+      edit: false
+    }
   },
   computed: {
     ...mapState(['hasCheckbox', 'hasCtrl', 'fields'])
@@ -95,64 +100,70 @@ export default {
     this.$refs.add.focus()
   },
   methods: {
-    ...mapMutations(['SET_CHECKBOX', 'SET_CTRL', 'ADD_FIELD', 'UPDATE_FIELD']),
+    ...mapActions(['setCheckbox', 'setCtrl', 'addField', 'updateField']),
     hide () {
       this.$router.back()
       window.fields = this.fields
     },
     handleBack () {
-      this.$refs.back.handleClick()
+      if (!this.edit) {
+        this.$refs.back.handleClick()
+      }
     },
     handleScroll (e) {
       let target = this.$refs.main
-      target.scrollTo({
-        left: target.scrollLeft + e.deltaY * 10,
-        behavior: 'smooth'
-      })
+      let step = 50
+      target.scrollLeft += e.deltaY < 0 ? -step : step
     },
     handleAdd (i) {
       this.$sound.stagepull.play()
+      this.edit = true
       this.$refs.form.add().then(
         (field) => {
-          this.ADD_FIELD({ field, i })
+          this.addField({ field, i })
           this.$refs.add.focus()
+          this.edit = false
         },
         () => {
           this.$refs.add.focus()
+          this.edit = false
         }
       )
     },
     handleUpdate (field, i) {
       this.$sound.stagepull.play()
+      this.edit = true
       this.$refs.form.update(field).then(
         (field) => {
-          this.UPDATE_FIELD({ field, i })
+          this.updateField({ field, i })
           this.$refs.field[i].focus()
+          this.edit = false
         },
         (isDelete) => {
           if (isDelete) {
             this.DELETE_FIELD(i)
           }
           this.$refs.add.focus()
+          this.edit = false
         }
       )
     },
     // 添加表格前面 checkbox
     addCheckboxRow () {
       window.$confirm('确认要开启选择框吗？</br>开启后将会在表格最前面出现选择框。').then(() => {
-        this.SET_CHECKBOX(true)
+        this.setCheckbox(true)
       }, () => {})
     },
     // 删除表格前面的 checkbox
     deleteCheckboxRow () {
       window.$confirm('确认要移除按钮组吗？').then(() => {
-        this.SET_CHECKBOX(false)
+        this.setCheckbox(false)
       }, () => {})
     },
     // 开启表格后面的按钮
     openCtrlRow () {
       window.$confirm('确认要开启按钮组吗？</br>开启后将会在表格最后面出现按钮组。').then(() => {
-        this.SET_CTRL(true)
+        this.setCtrl(true)
       }, () => {})
     },
     // 添加表格前面 ctrl
@@ -174,8 +185,8 @@ export default {
 
 .layout-fight {
   top: 50%;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   position: absolute;
   display: flex;
   align-items: center;
@@ -296,7 +307,7 @@ export default {
 .layout-fight-ctrl {
   top: ~'calc(50% + 150px + 40px)';
   left: 0;
-  min-width: 100vw;
+  min-width: 100%;
   height: 20px;
   padding: 0 100px;
   padding-left: 140px;
